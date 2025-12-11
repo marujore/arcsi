@@ -1,0 +1,34 @@
+arcsi.py -s ls8 -f KEA --stats -p RAD -o ./OutputImages \
+  -i LC80430342013291LGN00/LC80430342013291LGN00_MTL.txt
+
+arcsi.py -s ls8 -f KEA --stats -p RAD TOA -o ./OutputImages \
+   -i LC80430342013291LGN00/LC80430342013291LGN00_MTL.txt
+
+----
+#``-s lstm``: specifies that it is a Landsat 5 TM scene which is being processed.
+#``-f KEA``: specifies that the output image file format should be KEA. Currently, only the KEA format is provided as an option but output files can be converted to another format using the ``gdal_translate`` command.
+#``--stats``: specifies that the output images should be populate with statistics and pyramids, makes data display much faster
+#``-p RAD TOA SREF``: specifies the output products to be generated. You only need to specify what you want, e.g., SREF but if other products (e.g., RAD) are required then these will also be produced even if they are not
+    specified.
+#``-o ./Outputs``: specifies the output directory where all output file will be outputted to.
+#``-i LT05_L1TP_203024_19950815_20180217_01_T1/LT05_L1TP_203024_19950815_20180217_01_T1_MTL.txt``: is the input images header file.
+
+arcsi.py -s cb4mux -f KEA --stats -p RAD -o /tower/Tasks/atcor/output \
+  -i /tower/Tasks/atcor/input/cb4mux/CBERS_4_MUX_20250823_154_126_L4_BAND5.xml
+
+
+arcsi.py -s lsoli -f KEA --stats -p RAD TOA -o /tower/Tasks/atcor/output \
+   -i /tower/Tasks/atcor/input/landsat/LC09_L2SP_223067_20250618_20250621_02_T1/LC09_L2SP_223067_20250618_20250621_02_T1_MTL.txt
+
+```
+Input imagery as listed in header file is present.
+
+Aerosol Profile =  None
+
+Atmosphere Profile =  None
+
+Image Base Name: LS5TM_19950815_latn517lonw0028_r24p203
+
+Input Header: 'LT05_L1TP_203024_19950815_20180217_01_T1/LT05_L1TP_203024_19950815_20180217_01_T1_MTL.txt'
+Error: 'An aersol profile has not been specified.'
+```

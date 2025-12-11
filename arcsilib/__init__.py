@@ -22,7 +22,7 @@ ARCSI_SUPPORT_EMAIL = "rsgislib-support@googlegroups.com"
 
 ARCSI_WEBSITE = "https://github.com/remotesensinginfo/arcsi"
 
-ARCSI_SENSORS_LIST = ["lsmss", "lstm", "lsetm", "lsoli", "sen2"]
+ARCSI_SENSORS_LIST = ["lsmss", "lstm", "lsetm", "lsoli", "sen2", "cb4mux"]
 ARCSI_PRODUCTS_LIST = [
     "RAD",
     "SATURATE",

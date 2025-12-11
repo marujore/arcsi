@@ -266,7 +266,7 @@ don't currently support the sensor you require.""",
     parser.add_argument(
         "--ximgres",
         type=float,
-        help="""Float for the output image pixel x resolution (if re-projected). 
+        help="""Float for the output image pixel x resolution (if re-projected).
                                 Optional, if not provided the input image resolution is used.""",
     )
     # Define the argument for the output y pixel resolution (if image re-projected).
@@ -585,7 +585,7 @@ don't currently support the sensor you require.""",
         "--flatoutdir",
         action="store_true",
         default=False,
-        help="""Do not create output directory for this image, 
+        help="""Do not create output directory for this image,
                 just output into the specified output directory""",
     )
 

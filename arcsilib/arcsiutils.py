@@ -300,6 +300,11 @@ class ARCSISensorFactory(object):
             from arcsilib.arcsisensorsentinel2 import ARCSISentinel2Sensor
 
             sensorClass = ARCSISentinel2Sensor(debugMode, inputImage)
+
+        elif sensor == "cb4mux":
+            from arcsilib.arcsisensorcbers4_mux import ARCSICBERS4MUXSensor
+
+            sensorClass = ARCSICBERS4MUXSensor(debugMode, inputImage)
         else:
             raise ARCSIException(
                 "Could not get a class representing the sensor specified from the factory."
