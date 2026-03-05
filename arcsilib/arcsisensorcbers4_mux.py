@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy
 import Py6S
+import rasterio
 import rsgislib
 from osgeo import gdal, osr
 
@@ -107,11 +108,12 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
         self.gridCellSizeRefl = 0.0
         self.gridCellSizeTherm = 0.0
 
+        self.specBandInfo = dict()
+
     def extractHeaderParameters(self, inputHeader, wktStr):
         """
         Understands and parses the CBERS-4/MUX .xml header files
         """
-        print("AAA Extract Header Parameters")
         try:
             inputHeaderPath = Path(inputHeader)
             base_dir = inputHeaderPath.parent
@@ -125,7 +127,6 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
             self.band6File = base_dir / f"{prefix}_BAND6.tif"
             self.band7File = base_dir / f"{prefix}_BAND7.tif"
             self.band8File = base_dir / f"{prefix}_BAND8.tif"
-            self.bandQAFile = base_dir / f"{prefix}_CMASK.tif"
 
             inputHeader = os.path.abspath(inputHeader)
             self.headerFileName = os.path.split(inputHeader)[1]
@@ -156,7 +157,6 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
                 raise ARCSIException(
                     "Do no recognise the spacecraft and sensor or combination."
                 )
-            print(f"AAA self.sensor = {self.sensor}")
 
             # Get row/path
             path_elem = root.find("ns:image/ns:path", namespaces)
@@ -165,8 +165,6 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
                 self.path = path_elem.text
             if row_elem is not None and row_elem.text:
                 self.row = row_elem.text
-            print(f"AAA self.path = {self.path}")
-            print(f"AAA self.row = {self.row}")
 
             # Get date and time of the acquisition
             viewing_center_elem = root.find("ns:viewing/ns:center", namespaces)
@@ -198,19 +196,16 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
                         milliseconds.ljust(6, "0")[:6]
                     ),  # microsecond (fill with zeros)
                 )
-            print(f"AAA self.acquisitionTime = {self.acquisitionTime}")
 
             # Tier (called level in CBERS)
             tier_elem = root.find("ns:image/ns:level", namespaces)
             if tier_elem is not None and tier_elem.text:
                 self.tier = tier_elem.text
-            print(f"AAA self.tier = {self.tier}")
 
             # Orbit Direction
             orbitDirection_elem = root.find("ns:image/ns:orbitDirection", namespaces)
             if orbitDirection_elem is not None and orbitDirection_elem.text:
                 self.orbitDirection = orbitDirection_elem.text
-            print(f"AAA self.orbitDirection = {self.orbitDirection}")
 
             # Absolute Calibration Coefficient (DN -> Rad) #TODO
             coef_elem = root.find(".//ns:image/ns:absoluteCalibrationCoefficient", namespaces)
@@ -220,13 +215,11 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
                     name = band.attrib["name"]
                     value = float(band.text)
                     coeffs[name] = value
-            print(f"AAA coeffs = {coeffs}")
             self.b5RadMulti = rsgislib.tools.utils.str_to_float(coeffs["5"])
             self.b6RadMulti = rsgislib.tools.utils.str_to_float(coeffs["6"])
             self.b7RadMulti = rsgislib.tools.utils.str_to_float(coeffs["7"])
             self.b8RadMulti = rsgislib.tools.utils.str_to_float(coeffs["8"])
 
-            print("AAA Extract Header Parameters: rad 0")
             self.b5RadAdd = 0  # CB4MUX only has multiplicative coefficient
             self.b6RadAdd = 0
             self.b7RadAdd = 0
@@ -292,7 +285,6 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
             #         headerParams["EARTH_SUN_DISTANCE"], 0.0
             #     )
 
-            print("AAA Extract Header Parameters: Projection")
             # Get Projection
             lon_elem = float(root.find(".//ns:originLongitude", namespaces).text)
             datum = root.find(".//ns:datumName", namespaces).text.upper()
@@ -313,7 +305,6 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
                 utmZoneStr = str(utmZone).replace("-", "")
                 self.projNameStr = "utm" + utmZoneStr + utmHem
 
-            print("AAA Extract Header Parameters: epsg")
             # Get EPSG Code.
             epsg = None
             if datum in ("WGS84", "WGS 84"):
@@ -3049,35 +3040,19 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
     #             ensure_ascii=False,
     #         )
 
-    # def expectedImageDataPresent(self):
-    #     imageDataPresent = True
+    def expectedImageDataPresent(self):
+        imageDataPresent = True
 
-    #     if not os.path.exists(self.band1File):
-    #         imageDataPresent = False
-    #     if not os.path.exists(self.band2File):
-    #         imageDataPresent = False
-    #     if not os.path.exists(self.band3File):
-    #         imageDataPresent = False
-    #     if not os.path.exists(self.band4File):
-    #         imageDataPresent = False
-    #     if not os.path.exists(self.band5File):
-    #         imageDataPresent = False
-    #     if not os.path.exists(self.band6File):
-    #         imageDataPresent = False
-    #     if not os.path.exists(self.band7File):
-    #         imageDataPresent = False
-    #     # if not os.path.exists(self.band8File):
-    #     #    imageDataPresent = False
-    #     if not os.path.exists(self.band9File):
-    #         imageDataPresent = False
-    #     if not os.path.exists(self.band10File):
-    #         imageDataPresent = False
-    #     if not os.path.exists(self.band11File):
-    #         imageDataPresent = False
-    #     # if not os.path.exists(self.bandQAFile):
-    #     #    imageDataPresent = False
+        if not os.path.exists(self.band5File):
+            imageDataPresent = False
+        if not os.path.exists(self.band6File):
+            imageDataPresent = False
+        if not os.path.exists(self.band7File):
+            imageDataPresent = False
+        if not os.path.exists(self.band8File):
+            imageDataPresent = False
 
-    #     return imageDataPresent
+        return imageDataPresent
 
     def hasThermal(self):
         return False
@@ -3180,113 +3155,86 @@ class ARCSICBERS4MUXSensor(ARCSIAbstractSensor):
     #     rsgislib.imageutils.delete_gdal_layer(tmpValidPxlMsk)
     #     return outputImage
 
-    # def convertImageToRadiance(
-    #     self, outputPath, outputReflName, outputThermalName, outFormat
-    # ):
-    #     print("Converting to Radiance")
-    #     outputReflImage = os.path.join(outputPath, outputReflName)
-    #     outputThermalImage = None
-    #     bandDefnSeq = list()
+    def convertImageToRadiance(
+        self, outputPath, outputReflName, outputThermalName, outFormat
+    ):
+        print("Converting to Radiance")
+        outputImage = os.path.join(outputPath, outputReflName)
+        bandDefnSeq = list()
+        lsBand = collections.namedtuple(
+            "LSBand", ["band_name", "input_img", "img_band", "add_val", "multi_val"]
+        )
+        bandDefnSeq.append(
+            lsBand(
+                band_name="Blue",
+                input_img=self.band5File,
+                img_band=1,
+                add_val=self.b5RadAdd,
+                multi_val=self.b5RadMulti,
+            )
+        )
+        bandDefnSeq.append(
+            lsBand(
+                band_name="Green",
+                input_img=self.band6File,
+                img_band=1,
+                add_val=self.b6RadAdd,
+                multi_val=self.b6RadMulti,
+            )
+        )
+        bandDefnSeq.append(
+            lsBand(
+                band_name="Red",
+                input_img=self.band7File,
+                img_band=1,
+                add_val=self.b7RadAdd,
+                multi_val=self.b7RadMulti,
+            )
+        )
+        bandDefnSeq.append(
+            lsBand(
+                band_name="NIR",
+                input_img=self.band8File,
+                img_band=1,
+                add_val=self.b8RadAdd,
+                multi_val=self.b8RadMulti,
+            )
+        )
+        processed_bands = []
+        profile = None
+        for i, band_cfg in enumerate(bandDefnSeq):
+            with rasterio.open(band_cfg['file']) as src:
+                data = src.read(1).astype(numpy.float32)
 
-    #     lsBand = collections.namedtuple(
-    #         "LSBand", ["band_name", "input_img", "img_band", "add_val", "multi_val"]
-    #     )
-    #     bandDefnSeq.append(
-    #         lsBand(
-    #             band_name="Coastal",
-    #             input_img=self.band1File,
-    #             img_band=1,
-    #             add_val=self.b1RadAdd,
-    #             multi_val=self.b1RadMulti,
-    #         )
-    #     )
-    #     bandDefnSeq.append(
-    #         lsBand(
-    #             band_name="Blue",
-    #             input_img=self.band2File,
-    #             img_band=1,
-    #             add_val=self.b2RadAdd,
-    #             multi_val=self.b2RadMulti,
-    #         )
-    #     )
-    #     bandDefnSeq.append(
-    #         lsBand(
-    #             band_name="Green",
-    #             input_img=self.band3File,
-    #             img_band=1,
-    #             add_val=self.b3RadAdd,
-    #             multi_val=self.b3RadMulti,
-    #         )
-    #     )
-    #     bandDefnSeq.append(
-    #         lsBand(
-    #             band_name="Red",
-    #             input_img=self.band4File,
-    #             img_band=1,
-    #             add_val=self.b4RadAdd,
-    #             multi_val=self.b4RadMulti,
-    #         )
-    #     )
-    #     bandDefnSeq.append(
-    #         lsBand(
-    #             band_name="NIR",
-    #             input_img=self.band5File,
-    #             img_band=1,
-    #             add_val=self.b5RadAdd,
-    #             multi_val=self.b5RadMulti,
-    #         )
-    #     )
-    #     bandDefnSeq.append(
-    #         lsBand(
-    #             band_name="SWIR1",
-    #             input_img=self.band6File,
-    #             img_band=1,
-    #             add_val=self.b6RadAdd,
-    #             multi_val=self.b6RadMulti,
-    #         )
-    #     )
-    #     bandDefnSeq.append(
-    #         lsBand(
-    #             band_name="SWIR2",
-    #             input_img=self.band7File,
-    #             img_band=1,
-    #             add_val=self.b7RadAdd,
-    #             multi_val=self.b7RadMulti,
-    #         )
-    #     )
-    #     rsgislib.imagecalibration.landsat_to_radiance_multi_add(
-    #         outputReflImage, outFormat, bandDefnSeq
-    #     )
+                radiance_data = band_cfg['mult'] * data + band_cfg['add']
 
-    #     if not outputThermalName == None:
-    #         outputThermalImage = os.path.join(outputPath, outputThermalName)
-    #         bandDefnSeq = list()
-    #         lsBand = collections.namedtuple(
-    #             "LSBand", ["band_name", "input_img", "img_band", "add_val", "multi_val"]
-    #         )
-    #         bandDefnSeq.append(
-    #             lsBand(
-    #                 band_name="ThermalB10",
-    #                 input_img=self.band10File,
-    #                 img_band=1,
-    #                 add_val=self.b10RadAdd,
-    #                 multi_val=self.b10RadMulti,
-    #             )
-    #         )
-    #         bandDefnSeq.append(
-    #             lsBand(
-    #                 band_name="ThermalB11",
-    #                 input_img=self.band11File,
-    #                 img_band=1,
-    #                 add_val=self.b11RadAdd,
-    #                 multi_val=self.b11RadMulti,
-    #             )
-    #         )
-    #         rsgislib.imagecalibration.landsat_to_radiance_multi_add(
-    #             outputThermalImage, outFormat, bandDefnSeq
-    #         )
+                processed_bands.append(radiance_data)
 
-    #     return outputReflImage, outputThermalImage
+                # Guardar perfil da primeira banda
+                if i == 0:
+                    profile = src.profile.copy()
+                    profile.update({
+                        'count': len(bandDefnSeq),
+                        'dtype': rasterio.float32,
+                        'driver': outFormat,
+                        'nodata': None
+                    })
+        
+        # Empilhar todas as bandas
+        if len(processed_bands) > 0:
+            stacked_data = numpy.stack(processed_bands, axis=0)
+            
+            # Escrever arquivo de saída
+            with rasterio.open(outputImage, 'w', **profile) as dst:
+                dst.write(stacked_data)
+        else:
+            raise ValueError("Nenhuma banda processada")
+
+        # rsgislib.imagecalibration.landsat_to_radiance_multi_add(
+        #     outputImage, outFormat, bandDefnSeq
+        # )
+
+        return outputImage, None
 
     # def generateImageSaturationMask(self, outputPath, outputName, outFormat):
     #     print("Generate Saturation Image")

@@ -1,6 +1,7 @@
 """
 Module that contains the ARCSIRun class.
 """
+
 ############################################################################
 #  arcsirun.py
 #
@@ -724,13 +725,13 @@ def prepParametersObj(
 
     if paramsObj.reproject:
         if paramsObj.useWKT2Reproject:
-            paramsObj.calcdOutVals[
-                "REPROJECT"
-            ] = rsgislib.tools.utils.read_text_file_no_new_lines(paramsObj.outWKTFile)
+            paramsObj.calcdOutVals["REPROJECT"] = (
+                rsgislib.tools.utils.read_text_file_no_new_lines(paramsObj.outWKTFile)
+            )
         else:
-            paramsObj.calcdOutVals[
-                "REPROJECT"
-            ] = rsgislib.tools.utils.read_text_file_no_new_lines(paramsObj.outProj4File)
+            paramsObj.calcdOutVals["REPROJECT"] = (
+                rsgislib.tools.utils.read_text_file_no_new_lines(paramsObj.outProj4File)
+            )
     return paramsObj
 
 
@@ -1028,12 +1029,12 @@ def convertInputImageToRadiance(paramsObj):
         outThermName = None
         if paramsObj.prodsToCalc["THERMAL"]:
             outThermName = paramsObj.outBaseName + "_therm_rad" + paramsObj.outFormatExt
-        (
-            paramsObj.radianceImage,
-            paramsObj.thermalRadImage,
-        ) = paramsObj.sensorClass.convertImageToRadiance(
-            paramsObj.outFilePath, outName, outThermName, paramsObj.outFormat
-        )
+            (
+                paramsObj.radianceImage,
+                paramsObj.thermalRadImage,
+            ) = paramsObj.sensorClass.convertImageToRadiance(
+                paramsObj.outFilePath, outName, outThermName, paramsObj.outFormat
+            )
 
         if paramsObj.sensorClass.maskInputImages():
             paramsObj.processStageStr = paramsObj.processStageStr + "_msk"
